@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { endpointGroups } from "./endpoints.js";
+import { endpointGroups, endpointUsage, v2Endpoints } from "./endpoints.js";
 import { Gw2ApiError, Gw2Client } from "./gw2-client.js";
 
 const queryValue = z.union([
@@ -46,13 +46,16 @@ export function createServer(client: Gw2Client): McpServer {
     "gw2_api_endpoints",
     {
       title: "Discover Guild Wars 2 API endpoints",
-      description: "Lists useful endpoint families and patterns. The generic GET tool also accepts endpoints not shown here.",
+      description: "Lists the complete API v2 surface currently advertised by ArenaNet, grouped by route family, plus common query parameters.",
       inputSchema: {},
     },
-    async () => ({
-      content: [{ type: "text", text: JSON.stringify(endpointGroups, null, 2) }],
-      structuredContent: endpointGroups,
-    }),
+    async () => {
+      const result = { count: v2Endpoints.length, usage: endpointUsage, groups: endpointGroups };
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        structuredContent: result,
+      };
+    },
   );
 
   return server;

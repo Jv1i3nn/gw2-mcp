@@ -44,7 +44,7 @@ Exemple pour la banque du compte authentifié :
 
 ### `gw2_api_endpoints`
 
-Retourne les principales familles d’endpoints et quelques modèles de chemins. `gw2_api_get` accepte également les endpoints absents de cette liste indicative.
+Retourne les 183 routes v2 actuellement annoncées par ArenaNet, regroupées par famille, avec les segments dynamiques et les paramètres communs. Le catalogue est basé sur l’index vivant `https://api.guildwars2.com/v2`; l’ancien dépôt [ArenaNet API CDI](https://github.com/arenanet/api-cdi/) sert de documentation historique complémentaire pour les schémas.
 
 ## Installation locale
 
