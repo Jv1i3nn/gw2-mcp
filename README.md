@@ -110,6 +110,7 @@ Voir la [documentation OpenAI sur l’authentification MCP](https://developers.o
 ## Structure
 
 ```text
+index.ts             Point d’entrée du preset Node Vercel
 api/mcp.ts           Route MCP Vercel
 src/auth.ts          Interface de résolution de la clé utilisateur
 src/gw2-client.ts    Client HTTP sécurisé de l’API GW2
