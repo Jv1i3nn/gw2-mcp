@@ -13,7 +13,7 @@ Le cœur MCP est fonctionnel :
 - transmission de la clé GW2 avec `Authorization: Bearer` vers ArenaNet ;
 - compilation TypeScript et tests automatisés.
 
-La couche OAuth 2.1 requise par ChatGPT reste à implémenter. La version actuelle ne doit donc pas encore être considérée comme une intégration ChatGPT multi-utilisateur prête pour la production.
+La couche OAuth 2.1 pour ChatGPT est intégrée : découverte RFC 9728, Authorization Code, PKCE S256, audience liée à `/mcp` et jetons AES-256-GCM sans stockage serveur.
 
 ## Outils MCP
 
@@ -71,11 +71,11 @@ https://votre-projet.vercel.app/mcp
 
 Le fichier `vercel.json` redirige `/mcp` vers la fonction `api/mcp.ts`.
 
-## Authentification multi-utilisateur prévue
+## Authentification multi-utilisateur
 
 ChatGPT ne peut pas envoyer directement une clé API GW2 personnalisée comme mécanisme d’authentification MCP. Un serveur MCP authentifié doit exposer un flux OAuth 2.1 compatible avec la spécification MCP.
 
-Le flux prévu ne nécessite ni compte applicatif, ni email, ni mot de passe :
+Le flux ne nécessite ni compte applicatif, ni email, ni mot de passe :
 
 1. ChatGPT ouvre la page d’autorisation hébergée sur Vercel.
 2. L’utilisateur saisit sa clé API GW2.
@@ -84,17 +84,36 @@ Le flux prévu ne nécessite ni compte applicatif, ni email, ni mot de passe :
 5. ChatGPT reçoit uniquement le jeton OAuth.
 6. La fonction MCP déchiffre le jeton pour appeler GW2 au nom de cet utilisateur.
 
-Cette approche permet de se passer de base de données. Elle nécessitera au minimum un secret de chiffrement `OAUTH_SECRET` configuré exclusivement dans les variables d’environnement Vercel.
+Cette approche permet de se passer de base de données. Elle nécessite un secret de chiffrement `OAUTH_SECRET` configuré exclusivement dans les variables d’environnement Vercel.
 
-Endpoints OAuth restant à ajouter :
+Endpoints OAuth disponibles :
 
 - `/.well-known/oauth-protected-resource` ;
 - `/.well-known/oauth-authorization-server` ;
 - `/oauth/authorize` ;
 - `/oauth/token` ;
-- Authorization Code avec PKCE S256 ;
-- validation de l’émetteur, de l’audience, des portées et de l’expiration ;
-- réponses `401` accompagnées de `WWW-Authenticate`.
+- `/oauth/authorize` valide la clé auprès de `/v2/tokeninfo` ;
+- `/oauth/token` échange le code avec PKCE S256 ;
+- `/mcp` valide l’audience, la portée et l’expiration ;
+- les réponses `401` contiennent le challenge `WWW-Authenticate`.
+
+### Configuration Vercel
+
+Créer une variable secrète pour Production, Preview et Development :
+
+```text
+OAUTH_SECRET=<résultat de openssl rand -base64 32>
+```
+
+Le domaine canonique de production est `https://gw2-mcp.vercel.app`.
+
+### Durées de vie
+
+- code d’autorisation : 5 minutes ;
+- token d’accès : 7 jours ;
+- aucun refresh token : ChatGPT relance l’autorisation après expiration.
+
+Le mode entièrement stateless ne permet pas de marquer un code d’autorisation comme consommé dans une base. PKCE empêche son utilisation sans le vérificateur secret du client, et sa durée de vie est limitée à cinq minutes. Une garantie stricte d’usage unique nécessiterait un stockage partagé tel que Vercel KV.
 
 Voir la [documentation OpenAI sur l’authentification MCP](https://developers.openai.com/plugins/build/auth).
 
@@ -113,6 +132,9 @@ Voir la [documentation OpenAI sur l’authentification MCP](https://developers.o
 index.ts             Point d’entrée du preset Node Vercel
 api/mcp.ts           Route MCP Vercel
 src/auth.ts          Interface de résolution de la clé utilisateur
+src/http.ts          Utilitaires HTTP du routeur Vercel
+src/oauth.ts         Endpoints OAuth et validation ChatGPT/GW2
+src/oauth-token.ts   Chiffrement des codes et tokens
 src/gw2-client.ts    Client HTTP sécurisé de l’API GW2
 src/endpoints.ts     Catalogue indicatif des endpoints
 src/mcp-server.ts    Déclaration des outils MCP

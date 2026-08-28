@@ -19,6 +19,7 @@ export function createServer(client: Gw2Client): McpServer {
       title: "Call the Guild Wars 2 API",
       description:
         "GET any official Guild Wars 2 API endpoint. Use paths such as v2/account, v2/items, v2/characters/My Character/inventory. Pass ids, page, page_size, lang, v, etc. in query. Set authenticated for account, character, guild-private, or commerce transaction data.",
+      _meta: { securitySchemes: [{ type: "oauth2", scopes: ["gw2:read"] }] },
       inputSchema: {
         endpoint: z.string().describe("API path beginning with v2/ (or legacy v1/), without query string"),
         query: z.record(queryValue).optional().describe("GW2 query parameters; arrays become comma-separated values"),
@@ -47,6 +48,7 @@ export function createServer(client: Gw2Client): McpServer {
     {
       title: "Discover Guild Wars 2 API endpoints",
       description: "Lists the complete API v2 surface currently advertised by ArenaNet, grouped by route family, plus common query parameters.",
+      _meta: { securitySchemes: [{ type: "oauth2", scopes: ["gw2:read"] }] },
       inputSchema: {},
     },
     async () => {
