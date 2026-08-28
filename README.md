@@ -114,7 +114,7 @@ api/mcp.ts           Route MCP Vercel
 src/auth.ts          Interface de résolution de la clé utilisateur
 src/gw2-client.ts    Client HTTP sécurisé de l’API GW2
 src/endpoints.ts     Catalogue indicatif des endpoints
-src/server.ts        Déclaration des outils MCP
+src/mcp-server.ts    Déclaration des outils MCP
 test/                Tests automatisés
 vercel.json          Configuration Vercel
 ```

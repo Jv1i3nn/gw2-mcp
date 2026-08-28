@@ -2,7 +2,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createApiKeyProvider } from "../src/auth.js";
 import { Gw2Client } from "../src/gw2-client.js";
-import { createServer } from "../src/server.js";
+import { createServer } from "../src/mcp-server.js";
 
 type VercelRequest = IncomingMessage & { body?: unknown; auth?: { token: string; clientId: string; scopes: string[] } };
 
