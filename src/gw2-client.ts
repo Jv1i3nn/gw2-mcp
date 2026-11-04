@@ -36,7 +36,7 @@ export class Gw2Client {
     const key = await this.apiKey();
     if (authenticated && !key) {
       throw new Error(
-        "This request requires a Guild Wars 2 API key. Supply MCP authentication, GW2_API_KEY, or a local key file.",
+        "This request requires a Guild Wars 2 API key. Authenticate through the MCP OAuth flow.",
       );
     }
 

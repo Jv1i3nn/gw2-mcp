@@ -1,5 +1,6 @@
+import { randomUUID } from "node:crypto";
 import type { ServerResponse } from "node:http";
-import { readForm, redirect, requestOrigin, requestUrl, sendHtml, sendJson, type VercelRequest } from "./http.js";
+import { readForm, readJson, redirect, requestOrigin, requestUrl, sendHtml, sendJson, type VercelRequest } from "./http.js";
 import { openToken, sealToken, verifyPkce, type AuthorizationCodePayload } from "./oauth-token.js";
 
 const SCOPE = "gw2:read";
@@ -21,6 +22,7 @@ export function authorizationServerMetadata(origin: string) {
     issuer: origin,
     authorization_endpoint: `${origin}/oauth/authorize`,
     token_endpoint: `${origin}/oauth/token`,
+    registration_endpoint: `${origin}/oauth/register`,
     client_id_metadata_document_supported: true,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code"],
@@ -29,6 +31,36 @@ export function authorizationServerMetadata(origin: string) {
     scopes_supported: [SCOPE],
     authorization_response_iss_parameter_supported: true,
   };
+}
+
+/** Stateless RFC 7591 dynamic client registration for MCP clients (Claude, Desktop, etc.). */
+export async function handleRegister(request: VercelRequest, response: ServerResponse): Promise<void> {
+  if (request.method !== "POST") {
+    sendJson(response, 405, { error: "method_not_allowed" }, { Allow: "POST" });
+    return;
+  }
+
+  try {
+    const body = await readJson(request);
+    const rawRedirects = body.redirect_uris;
+    if (!Array.isArray(rawRedirects) || rawRedirects.length === 0 || !rawRedirects.every((uri): uri is string => typeof uri === "string" && isAllowedRedirectUri(uri))) {
+      throw new OAuthError("invalid_redirect_uri", "redirect_uris must be a non-empty array of HTTPS or loopback HTTP URIs");
+    }
+
+    const clientName = typeof body.client_name === "string" && body.client_name.trim() ? body.client_name.trim() : "MCP Client";
+    sendJson(response, 201, {
+      client_id: `mcp_${randomUUID()}`,
+      client_id_issued_at: Math.floor(Date.now() / 1000),
+      client_name: clientName,
+      redirect_uris: rawRedirects,
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+    });
+  } catch (error) {
+    const oauthError = error instanceof OAuthError ? error : new OAuthError("invalid_client_metadata", "Invalid client registration payload");
+    sendJson(response, oauthError.status, { error: oauthError.code, error_description: oauthError.description });
+  }
 }
 
 export async function handleAuthorize(request: VercelRequest, response: ServerResponse): Promise<void> {
@@ -127,8 +159,8 @@ function validateAuthorizationRequest(parameters: URLSearchParams, origin: strin
   const resource = required(parameters, "resource");
   if (parameters.get("code_challenge_method") !== "S256") throw new OAuthError("invalid_request", "PKCE S256 est obligatoire.");
   if (!/^[A-Za-z0-9_-]{43}$/.test(codeChallenge)) throw new OAuthError("invalid_request", "Code challenge PKCE invalide.");
-  if (!isChatGptClient(clientId)) throw new OAuthError("unauthorized_client", "Client OAuth non autorisé.", 403);
-  if (!isChatGptRedirect(redirectUri)) throw new OAuthError("invalid_request", "URI de redirection non autorisée.", 403);
+  if (!isValidClientId(clientId)) throw new OAuthError("unauthorized_client", "Client OAuth invalide.", 403);
+  if (!isAllowedRedirectUri(redirectUri)) throw new OAuthError("invalid_request", "URI de redirection non autorisée (HTTPS ou loopback requis).", 403);
   if (resource !== `${origin}/mcp`) throw new OAuthError("invalid_target", "Ressource MCP invalide.");
   const requestedScope = parameters.get("scope")?.trim() || SCOPE;
   if (requestedScope !== SCOPE) throw new OAuthError("invalid_scope", `Seule la portée ${SCOPE} est acceptée.`);
@@ -153,20 +185,19 @@ async function validateGw2Key(key: string): Promise<void> {
   if (!response.ok) throw new OAuthError("access_denied", "Cette clé API Guild Wars 2 est invalide ou inaccessible.", 401);
 }
 
-function isChatGptClient(clientId: string): boolean {
-  try {
-    const url = new URL(clientId);
-    return url.protocol === "https:" && url.hostname === "chatgpt.com" && /^\/oauth\/(?:client\.json|[^/]+\/client\.json)$/.test(url.pathname);
-  } catch {
-    return false;
-  }
+export function isValidClientId(clientId: string): boolean {
+  return clientId.length > 0 && clientId.length <= 512 && /^[\x21-\x7E]+$/.test(clientId);
 }
 
-function isChatGptRedirect(redirectUri: string): boolean {
+export function isAllowedRedirectUri(redirectUri: string): boolean {
   try {
     const url = new URL(redirectUri);
-    return url.protocol === "https:" && url.hostname === "chatgpt.com" &&
-      (url.pathname === "/connector_platform_oauth_redirect" || /^\/connector\/oauth\/[^/]+$/.test(url.pathname));
+    if (url.hash !== "") return false;
+    if (url.protocol === "https:") return Boolean(url.hostname);
+    if (url.protocol === "http:") {
+      return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
+    }
+    return false;
   } catch {
     return false;
   }
@@ -184,11 +215,11 @@ function authorizationPage(oauth: ReturnType<typeof validateAuthorizationRequest
     code_challenge: oauth.codeChallenge, code_challenge_method: "S256", state: oauth.state,
     resource: oauth.resource, scope: oauth.scope,
   }).map(([name, value]) => `<input type="hidden" name="${name}" value="${escapeHtml(value)}">`).join("\n");
-  return page("Connecter Guild Wars 2", `<h1>Connecter Guild Wars 2</h1><p>Collez une clé API créée sur votre compte ArenaNet. Elle sera chiffrée dans un jeton temporaire et ne sera pas enregistrée sur le serveur.</p><form method="post" action="/oauth/authorize">${hidden}<label for="gw2_key">Clé API Guild Wars 2</label><input id="gw2_key" name="gw2_key" type="password" required autocomplete="off" spellcheck="false"><button type="submit">Connecter à ChatGPT</button></form><p class="small">La clé est validée directement auprès de l’API officielle Guild Wars 2.</p>`);
+  return page("Connecter Guild Wars 2", `<h1>Connecter Guild Wars 2</h1><p>Collez une clé API créée sur votre compte ArenaNet. Elle sera chiffrée dans un jeton temporaire et ne sera pas enregistrée sur le serveur.</p><form method="post" action="/oauth/authorize">${hidden}<label for="gw2_key">Clé API Guild Wars 2</label><input id="gw2_key" name="gw2_key" type="password" required autocomplete="off" spellcheck="false"><button type="submit">Autoriser l’accès MCP</button></form><p class="small">La clé est validée directement auprès de l’API officielle Guild Wars 2.</p>`);
 }
 
 function errorPage(message: string): string {
-  return page("Autorisation impossible", `<h1>Autorisation impossible</h1><p class="error">${escapeHtml(message)}</p><p>Vous pouvez fermer cette fenêtre et recommencer la connexion depuis ChatGPT.</p>`);
+  return page("Autorisation impossible", `<h1>Autorisation impossible</h1><p class="error">${escapeHtml(message)}</p><p>Vous pouvez fermer cette fenêtre et recommencer la connexion depuis votre client MCP.</p>`);
 }
 
 function page(title: string, content: string): string {

@@ -4,6 +4,7 @@ import { requestOrigin, requestUrl, sendHtml, sendJson, type VercelRequest } fro
 import {
   authorizationServerMetadata,
   handleAuthorize,
+  handleRegister,
   handleToken,
   protectedResourceMetadata,
 } from "./src/oauth.js";
@@ -24,6 +25,7 @@ export default async function handler(request: VercelRequest, response: ServerRe
   }
   if (pathname === "/oauth/authorize") return handleAuthorize(request, response);
   if (pathname === "/oauth/token") return handleToken(request, response);
+  if (pathname === "/oauth/register") return handleRegister(request, response);
   if (pathname === "/") {
     sendHtml(response, 200, `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guild Wars 2 MCP</title></head><body><main><h1>Guild Wars 2 MCP</h1><p>Serveur MCP connecté à l’API officielle Guild Wars 2.</p><p><a href="https://github.com/Jv1i3nn/gw2-mcp">Code source</a></p></main></body></html>`);
     return;
