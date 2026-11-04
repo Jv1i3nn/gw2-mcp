@@ -21,7 +21,7 @@ test("builds queries and sends the key as a bearer token", async () => {
     capturedAuthorization = new Headers(init?.headers).get("authorization");
     return new Response(JSON.stringify([{ id: 1 }]), { status: 200 });
   };
-  const client = new Gw2Client(async () => "secret", fetcher);
+  const client = new Gw2Client("secret", fetcher);
 
   const result = await client.get({ endpoint: "v2/items", query: { ids: [1, 2], lang: "fr" } });
 
@@ -31,6 +31,6 @@ test("builds queries and sends the key as a bearer token", async () => {
 });
 
 test("requires a key only when requested", async () => {
-  const client = new Gw2Client(async () => undefined, async () => new Response("{}"));
+  const client = new Gw2Client(undefined, async () => new Response("{}"));
   await assert.rejects(() => client.get({ endpoint: "v2/account", authenticated: true }), /requires a Guild Wars 2 API key/);
 });

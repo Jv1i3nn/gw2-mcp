@@ -2,12 +2,6 @@ import { createServer, type Server } from "node:http";
 import { pathToFileURL } from "node:url";
 import handler from "../index.js";
 
-function isLoopbackHost(host: string | undefined): boolean {
-  if (!host) return false;
-  const hostname = host.split(":")[0]?.toLowerCase();
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
-}
-
 /** Starts a standalone Node.js HTTP server for self-hosted / non-Vercel deployments. */
 export function startStandaloneServer(
   port = Number(process.env.PORT ?? 3000),
@@ -18,9 +12,6 @@ export function startStandaloneServer(
   }
 
   const server = createServer((request, response) => {
-    if (!request.headers["x-forwarded-proto"] && isLoopbackHost(request.headers.host)) {
-      request.headers["x-forwarded-proto"] = "http";
-    }
     void handler(request, response).catch(() => {
       if (!response.headersSent) {
         response.statusCode = 500;

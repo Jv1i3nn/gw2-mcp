@@ -1,8 +1,7 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { ServerResponse } from "node:http";
-import { createApiKeyProvider } from "../src/auth.js";
 import { Gw2Client } from "../src/gw2-client.js";
-import { requestOrigin, type VercelRequest } from "../src/http.js";
+import { requestOrigin, sendJson, type VercelRequest } from "../src/http.js";
 import { createServer } from "../src/mcp-server.js";
 import { resolveAccessToken } from "../src/oauth.js";
 
@@ -30,18 +29,13 @@ export default async function handler(request: VercelRequest, response: ServerRe
     if (!token) throw new Error("Missing access token");
     gw2Key = resolveAccessToken(token, resource);
   } catch {
-    response.statusCode = 401;
-    response.setHeader("Content-Type", "application/json; charset=utf-8");
-    response.setHeader(
-      "WWW-Authenticate",
-      `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource", scope="gw2:read", error="invalid_token", error_description="Connect your Guild Wars 2 API key"`,
-    );
-    response.end(JSON.stringify({ error: "unauthorized" }));
+    sendJson(response, 401, { error: "unauthorized" }, {
+      "WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource", scope="gw2:read", error="invalid_token", error_description="Connect your Guild Wars 2 API key"`,
+    });
     return;
   }
 
-  const apiKey = createApiKeyProvider(() => gw2Key);
-  const server = createServer(new Gw2Client(apiKey));
+  const server = createServer(new Gw2Client(gw2Key));
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

@@ -1,5 +1,3 @@
-import type { ApiKeyProvider } from "./auth.js";
-
 export type QueryValue = string | number | boolean | Array<string | number>;
 
 export interface Gw2Request {
@@ -20,7 +18,7 @@ export class Gw2ApiError extends Error {
 
 export class Gw2Client {
   constructor(
-    private readonly apiKey: ApiKeyProvider,
+    private readonly apiKey?: string,
     private readonly fetcher: typeof fetch = fetch,
   ) {}
 
@@ -33,7 +31,7 @@ export class Gw2Client {
       url.searchParams.set(name, value);
     }
 
-    const key = await this.apiKey();
+    const key = this.apiKey?.trim();
     if (authenticated && !key) {
       throw new Error(
         "This request requires a Guild Wars 2 API key. Authenticate through the MCP OAuth flow.",

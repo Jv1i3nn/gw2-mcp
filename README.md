@@ -93,7 +93,6 @@ Le projet ne lit aucun fichier de clé local et n’utilise aucune clé GW2 part
 ```text
 index.ts             Routeur HTTP principal (MCP et OAuth)
 api/mcp.ts           Gestionnaire du transport MCP Streamable HTTP
-src/auth.ts          Interface de résolution de la clé utilisateur
 src/http.ts          Utilitaires HTTP
 src/oauth.ts         Endpoints OAuth 2.1 et validation de la clé GW2
 src/oauth-token.ts   Chiffrement AES-256-GCM des codes et jetons
