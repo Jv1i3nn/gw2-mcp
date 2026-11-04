@@ -1,6 +1,6 @@
 # Guild Wars 2 MCP
 
-Serveur [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) en TypeScript donnant accès à l’[API officielle Guild Wars 2](https://wiki.guildwars2.com/wiki/API:Main). Il permet à n’importe quel client MCP compatible (Claude, ChatGPT, clients MCP de bureau ou CLI) d’interroger les données publiques du jeu ainsi que les données de compte d’un joueur via sa propre clé API GW2.
+Serveur [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) en TypeScript donnant accès à l’[API officielle Guild Wars 2](https://wiki.guildwars2.com/wiki/API:Main). Il permet à n’importe quel client MCP compatible (Claude, ChatGPT, IDE ou CLI) d’interroger les données publiques du jeu ainsi que les données de compte d’un joueur via sa propre clé API GW2.
 
 > **Projet communautaire non officiel** — Ce dépôt est un projet personnel indépendant. Il n’est ni affilié, ni associé, ni autorisé, ni approuvé par ArenaNet, LLC ou NCSOFT Corporation.
 
