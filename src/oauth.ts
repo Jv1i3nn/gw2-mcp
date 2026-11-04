@@ -193,6 +193,10 @@ export function isAllowedRedirectUri(redirectUri: string): boolean {
   try {
     const url = new URL(redirectUri);
     if (url.hash !== "") return false;
+    const allowlist = process.env.ALLOWED_REDIRECT_HOSTS?.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+    if (allowlist && allowlist.length > 0 && !allowlist.includes(url.hostname.toLowerCase())) {
+      return false;
+    }
     if (url.protocol === "https:") return Boolean(url.hostname);
     if (url.protocol === "http:") {
       return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
@@ -210,12 +214,13 @@ function required(parameters: URLSearchParams, name: string): string {
 }
 
 function authorizationPage(oauth: ReturnType<typeof validateAuthorizationRequest>): string {
+  const targetOrigin = new URL(oauth.redirectUri).origin;
   const hidden = Object.entries({
     response_type: "code", client_id: oauth.clientId, redirect_uri: oauth.redirectUri,
     code_challenge: oauth.codeChallenge, code_challenge_method: "S256", state: oauth.state,
     resource: oauth.resource, scope: oauth.scope,
   }).map(([name, value]) => `<input type="hidden" name="${name}" value="${escapeHtml(value)}">`).join("\n");
-  return page("Connecter Guild Wars 2", `<h1>Connecter Guild Wars 2</h1><p>Collez une clé API créée sur votre compte ArenaNet. Elle sera chiffrée dans un jeton temporaire et ne sera pas enregistrée sur le serveur.</p><form method="post" action="/oauth/authorize">${hidden}<label for="gw2_key">Clé API Guild Wars 2</label><input id="gw2_key" name="gw2_key" type="password" required autocomplete="off" spellcheck="false"><button type="submit">Autoriser l’accès MCP</button></form><p class="small">La clé est validée directement auprès de l’API officielle Guild Wars 2.</p>`);
+  return page("Connecter Guild Wars 2", `<h1>Connecter Guild Wars 2</h1><p>Collez une clé API créée sur votre compte ArenaNet. Elle sera chiffrée dans un jeton temporaire transmis à <strong>${escapeHtml(targetOrigin)}</strong> et ne sera pas enregistrée sur le serveur.</p><form method="post" action="/oauth/authorize">${hidden}<label for="gw2_key">Clé API Guild Wars 2</label><input id="gw2_key" name="gw2_key" type="password" required autocomplete="off" spellcheck="false"><button type="submit">Autoriser l’accès MCP</button></form><p class="small">La clé est validée directement auprès de l’API officielle Guild Wars 2.</p>`);
 }
 
 function errorPage(message: string): string {

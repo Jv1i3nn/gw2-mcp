@@ -5,10 +5,18 @@ export type VercelRequest = IncomingMessage & {
   auth?: { token: string; clientId: string; scopes: string[] };
 };
 
+const MAX_BODY_BYTES = 64 * 1024;
+const VALID_HOST = /^(?:[A-Za-z0-9.-]+|\[[0-9a-fA-F:]+\])(?::\d{1,5})?$/;
+
 export function requestOrigin(request: IncomingMessage): string {
-  const forwardedProto = firstHeader(request.headers["x-forwarded-proto"]) ?? "https";
+  const forwardedProto = (firstHeader(request.headers["x-forwarded-proto"]) ?? "https").toLowerCase();
+  if (forwardedProto !== "http" && forwardedProto !== "https") {
+    throw new Error("Invalid request protocol");
+  }
   const forwardedHost = firstHeader(request.headers["x-forwarded-host"]) ?? request.headers.host;
-  if (!forwardedHost) throw new Error("Missing request host");
+  if (!forwardedHost || !VALID_HOST.test(forwardedHost)) {
+    throw new Error("Invalid or missing request host");
+  }
   return `${forwardedProto}://${forwardedHost}`;
 }
 
@@ -44,7 +52,15 @@ export async function readJson(request: VercelRequest): Promise<Record<string, u
 
 async function readRawBody(request: VercelRequest): Promise<string> {
   const chunks: Buffer[] = [];
-  for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  let totalBytes = 0;
+  for await (const chunk of request) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += buffer.length;
+    if (totalBytes > MAX_BODY_BYTES) {
+      throw new Error("Request body too large");
+    }
+    chunks.push(buffer);
+  }
   return Buffer.concat(chunks).toString("utf8");
 }
 
