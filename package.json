@@ -1,12 +1,14 @@
 {
   "name": "gw2-mcp-server",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
   "type": "module",
   "main": "index.ts",
   "description": "MCP server exposing the Guild Wars 2 API",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/src/standalone.js",
+    "dev": "tsx src/standalone.ts",
     "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
