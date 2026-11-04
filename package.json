@@ -6,6 +6,7 @@
   "main": "index.ts",
   "description": "MCP server exposing the Guild Wars 2 API",
   "scripts": {
+    "lint": "tsc --noEmit",
     "build": "tsc",
     "start": "node dist/src/standalone.js",
     "dev": "tsx src/standalone.ts",
