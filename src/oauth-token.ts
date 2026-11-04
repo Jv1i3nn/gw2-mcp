@@ -35,17 +35,38 @@ export function sealToken(payload: OAuthPayload): string {
   return ["v1", iv.toString("base64url"), ciphertext.toString("base64url"), cipher.getAuthTag().toString("base64url")].join(".");
 }
 
+function decodeBase64Url(encoded: string, expectedByteLength?: number): Buffer {
+  if (!encoded || !/^[A-Za-z0-9_-]+$/.test(encoded)) {
+    throw new Error("Invalid token format");
+  }
+  const decoded = Buffer.from(encoded, "base64url");
+  if (decoded.toString("base64url") !== encoded) {
+    throw new Error("Invalid token format");
+  }
+  if (expectedByteLength !== undefined && decoded.length !== expectedByteLength) {
+    throw new Error("Invalid token format");
+  }
+  return decoded;
+}
+
 export function openToken(token: string): OAuthPayload {
-  const [version, encodedIv, encodedCiphertext, encodedTag] = token.split(".");
+  const parts = token.split(".");
+  if (parts.length !== 4) {
+    throw new Error("Invalid token format");
+  }
+  const [version, encodedIv, encodedCiphertext, encodedTag] = parts;
   if (version !== "v1" || !encodedIv || !encodedCiphertext || !encodedTag) {
     throw new Error("Invalid token format");
   }
 
   try {
-    const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(encodedIv, "base64url"));
-    decipher.setAuthTag(Buffer.from(encodedTag, "base64url"));
+    const iv = decodeBase64Url(encodedIv, 12);
+    const ciphertext = decodeBase64Url(encodedCiphertext);
+    const tag = decodeBase64Url(encodedTag, 16);
+    const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), iv);
+    decipher.setAuthTag(tag);
     const plaintext = Buffer.concat([
-      decipher.update(Buffer.from(encodedCiphertext, "base64url")),
+      decipher.update(ciphertext),
       decipher.final(),
     ]).toString("utf8");
     const payload = JSON.parse(plaintext) as OAuthPayload;
