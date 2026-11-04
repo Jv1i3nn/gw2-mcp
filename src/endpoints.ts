@@ -25,7 +25,7 @@ export const v2Endpoints = [
   "v2/characters/:id/sab", "v2/characters/:id/skills", "v2/characters/:id/specializations",
   "v2/characters/:id/training", "v2/colors", "v2/commerce/delivery", "v2/commerce/exchange",
   "v2/commerce/listings", "v2/commerce/prices", "v2/commerce/transactions", "v2/continents",
-  "v2/createsubtoken", "v2/currencies", "v2/dailycrafting", "v2/dungeons", "v2/emblem",
+  "v2/currencies", "v2/dailycrafting", "v2/dungeons", "v2/emblem",
   "v2/emotes", "v2/events", "v2/events-state", "v2/files", "v2/finishers",
   "v2/gemstore/catalog", "v2/gliders", "v2/guild/:id", "v2/guild/:id/log",
   "v2/guild/:id/members", "v2/guild/:id/ranks", "v2/guild/:id/stash",

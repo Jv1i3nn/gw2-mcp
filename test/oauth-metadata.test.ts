@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import type { ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import test from "node:test";
-import type { VercelRequest } from "../src/http.js";
+import { requestOrigin, type VercelRequest } from "../src/http.js";
 import {
   authorizationServerMetadata,
   handleRegister,
@@ -35,6 +35,19 @@ test("OAuth client validation accepts standard MCP clients (Claude, ChatGPT, loo
   assert.equal(isAllowedRedirectUri("http://localhost:3000/oauth/callback"), true);
   assert.equal(isAllowedRedirectUri("http://evil.example.com/callback"), false);
   assert.equal(isAllowedRedirectUri("https://claude.ai/callback#fragment"), false);
+
+  process.env.ALLOWED_REDIRECT_HOSTS = "claude.ai, chatgpt.com";
+  try {
+    assert.equal(isAllowedRedirectUri("https://claude.ai/api/mcp/auth_callback"), true);
+    assert.equal(isAllowedRedirectUri("https://untrusted.example.com/callback"), false);
+  } finally {
+    delete process.env.ALLOWED_REDIRECT_HOSTS;
+  }
+
+  assert.throws(
+    () => requestOrigin({ headers: { host: 'evil.com", error="pwned' } } as unknown as IncomingMessage),
+    /Invalid or missing request host/,
+  );
 });
 
 test("RFC 7591 dynamic client registration issues a stateless client_id", async () => {

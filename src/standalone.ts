@@ -21,12 +21,12 @@ export function startStandaloneServer(
     if (!request.headers["x-forwarded-proto"] && isLoopbackHost(request.headers.host)) {
       request.headers["x-forwarded-proto"] = "http";
     }
-    void handler(request, response).catch((error: unknown) => {
+    void handler(request, response).catch(() => {
       if (!response.headersSent) {
         response.statusCode = 500;
         response.setHeader("Content-Type", "application/json; charset=utf-8");
       }
-      response.end(JSON.stringify({ error: "internal_server_error", detail: error instanceof Error ? error.message : undefined }));
+      response.end(JSON.stringify({ error: "internal_server_error" }));
     });
   });
 

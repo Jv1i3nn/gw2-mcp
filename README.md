@@ -45,7 +45,7 @@ Exemple pour la banque du compte authentifié :
 
 ### `gw2_api_endpoints`
 
-Retourne les 183 routes `v2` annoncées par ArenaNet, regroupées par famille, avec les segments dynamiques (`:id`, `:board`, `:region`, `:guild_id`, `:team`) et les paramètres communs.
+Retourne les 182 routes `v2` annoncées par ArenaNet, regroupées par famille, avec les segments dynamiques (`:id`, `:board`, `:region`, `:guild_id`, `:team`) et les paramètres communs.
 
 ## Clé API Guild Wars 2
 

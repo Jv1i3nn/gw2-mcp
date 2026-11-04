@@ -67,5 +67,8 @@ export function normalizeEndpoint(endpoint: string): string {
   if (path.includes("?") || path.includes("#") || path.includes("\\") || path.split("/").includes("..")) {
     throw new Error("Put query parameters in the query object; endpoint contains an invalid segment");
   }
+  if (/^v2\/createsubtoken(?:\/|$)/i.test(path)) {
+    throw new Error("v2/createsubtoken is disabled to prevent credential exfiltration");
+  }
   return path;
 }

@@ -6,10 +6,11 @@ test("normalizes a valid API endpoint", () => {
   assert.equal(normalizeEndpoint("/v2/account"), "v2/account");
 });
 
-test("rejects URLs and traversal", () => {
+test("rejects URLs, traversal, and subtoken minting", () => {
   assert.throws(() => normalizeEndpoint("https://evil.test/v2/account"));
   assert.throws(() => normalizeEndpoint("v2/../secret"));
   assert.throws(() => normalizeEndpoint("v2/items?ids=all"));
+  assert.throws(() => normalizeEndpoint("v2/createsubtoken"), /createsubtoken is disabled/);
 });
 
 test("builds queries and sends the key as a bearer token", async () => {
