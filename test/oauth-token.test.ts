@@ -17,7 +17,9 @@ test("encrypted access tokens round-trip without exposing the GW2 key", () => {
     });
     assert.ok(!token.includes("private-gw2-key"));
     assert.equal(openToken(token).gw2Key, "private-gw2-key");
-    assert.throws(() => openToken(`${token.slice(0, -1)}x`), /Invalid token/);
+    const tamperedSuffix = token.endsWith("x") ? "y" : "x";
+    assert.throws(() => openToken(`${token.slice(0, -1)}${tamperedSuffix}`), /Invalid token/);
+    assert.throws(() => openToken(`${token}.extra`), /Invalid token/);
   } finally {
     if (previous === undefined) delete process.env.OAUTH_SECRET;
     else process.env.OAUTH_SECRET = previous;
