@@ -36,14 +36,8 @@ export function sealToken(payload: OAuthPayload): string {
 }
 
 function decodeBase64Url(encoded: string, expectedByteLength?: number): Buffer {
-  if (!encoded || !/^[A-Za-z0-9_-]+$/.test(encoded)) {
-    throw new Error("Invalid token format");
-  }
   const decoded = Buffer.from(encoded, "base64url");
-  if (decoded.toString("base64url") !== encoded) {
-    throw new Error("Invalid token format");
-  }
-  if (expectedByteLength !== undefined && decoded.length !== expectedByteLength) {
+  if (!encoded || decoded.toString("base64url") !== encoded || (expectedByteLength !== undefined && decoded.length !== expectedByteLength)) {
     throw new Error("Invalid token format");
   }
   return decoded;
@@ -51,13 +45,10 @@ function decodeBase64Url(encoded: string, expectedByteLength?: number): Buffer {
 
 export function openToken(token: string): OAuthPayload {
   const parts = token.split(".");
-  if (parts.length !== 4) {
+  if (parts.length !== 4 || parts[0] !== "v1") {
     throw new Error("Invalid token format");
   }
-  const [version, encodedIv, encodedCiphertext, encodedTag] = parts;
-  if (version !== "v1" || !encodedIv || !encodedCiphertext || !encodedTag) {
-    throw new Error("Invalid token format");
-  }
+  const [, encodedIv = "", encodedCiphertext = "", encodedTag = ""] = parts;
 
   try {
     const iv = decodeBase64Url(encodedIv, 12);
