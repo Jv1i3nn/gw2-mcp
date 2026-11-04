@@ -47,7 +47,7 @@ export default async function handler(request: VercelRequest, response: ServerRe
     enableJsonResponse: true,
   });
 
-  request.auth = { token, clientId: "chatgpt", scopes: ["gw2:read"] };
+  request.auth = { token, clientId: "mcp-client", scopes: ["gw2:read"] };
   await server.connect(transport);
   await transport.handleRequest(request, response, request.body);
 }

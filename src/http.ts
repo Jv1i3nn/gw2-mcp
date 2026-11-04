@@ -23,9 +23,29 @@ export async function readForm(request: VercelRequest): Promise<URLSearchParams>
     return new URLSearchParams(Object.entries(request.body as Record<string, unknown>).map(([key, value]) => [key, String(value)]));
   }
 
+  return new URLSearchParams(await readRawBody(request));
+}
+
+export async function readJson(request: VercelRequest): Promise<Record<string, unknown>> {
+  if (request.body && typeof request.body === "object" && !Buffer.isBuffer(request.body)) {
+    return request.body as Record<string, unknown>;
+  }
+  const raw = typeof request.body === "string"
+    ? request.body
+    : Buffer.isBuffer(request.body)
+      ? request.body.toString("utf8")
+      : await readRawBody(request);
+  const parsed: unknown = JSON.parse(raw || "{}");
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Expected a JSON object");
+  }
+  return parsed as Record<string, unknown>;
+}
+
+async function readRawBody(request: VercelRequest): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  return new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 export function sendJson(response: ServerResponse, status: number, value: unknown, headers: Record<string, string> = {}): void {
